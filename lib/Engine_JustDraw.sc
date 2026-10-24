@@ -68,6 +68,7 @@ Engine_JustDraw : CroneEngine {
 		// Effects: each command sets one control on the synth that owns it.
 		[
 			[\set_reverb_send, { sends }, \reverb_send], [\set_delay_send, { sends }, \delay_send],
+			[\set_grains_send, { sends }, \grains_send],
 			[\set_delay_time, { delay }, \delayTime], [\set_delay_decay, { delay }, \decayTime],
 			[\set_delay_level, { delay }, \amp], [\set_delay_to_reverb, { delay }, \to_reverb],
 			[\set_delay_to_dry, { delay }, \to_dry], [\set_reverb_room, { reverb }, \room],
