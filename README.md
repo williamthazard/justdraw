@@ -75,6 +75,5 @@ all in params, so a pset saves and loads every one of them.
 - with no tablet, the screen says "plug in the tablet". plugging it in or out while the script
   runs is fine.
 - loading another script lets go of every note and drops the crow gate.
-- the check list for a first run is in `docs/norns-check.md`.
 
 mit license. made by william hazard.
