@@ -64,11 +64,34 @@ function Player:pen_down(d)
   self:each_live("down", self:pitch(), d.x, d.p)
 end
 
+local MIN_STEP, MAX_POINTS = 0.01, 400
+
+-- Adds the pen's position to a trail. A point only counts when it is at least MIN_STEP from the
+-- last kept one in x or y; closer moves just slide a trailing point, so the newest point is
+-- always where the pen is. At most MAX_POINTS are held; the oldest drop.
+function Player.extend(tr, d)
+  local pts = tr.points
+  local a = tr.anchor or pts[#pts]
+  local far = math.abs(d.x - a.x) >= MIN_STEP or math.abs(d.y - a.y) >= MIN_STEP
+  local pt = { x = d.x, y = d.y, p = d.p }
+  if far then
+    if tr.tail then pts[#pts] = pt else pts[#pts + 1] = pt end
+    tr.anchor, tr.tail = pt, false
+  elseif tr.tail then
+    pts[#pts] = pt
+  else
+    tr.anchor = a
+    pts[#pts + 1] = pt
+    tr.tail = true
+  end
+  if #pts > MAX_POINTS then table.remove(pts, 1) end
+end
+
 function Player:pen_move(d)
   if not self.tip then return end
   self.tip = { x = d.x, y = d.y, p = d.p }
   local tr = self.trails[#self.trails]
-  if tr and not tr.up_at then tr.points[#tr.points + 1] = { x = d.x, y = d.y, p = d.p } end
+  if tr and not tr.up_at then Player.extend(tr, d) end
   self:each_live("move", self:pitch(), d.x, d.p)
 end
 
@@ -132,7 +155,7 @@ end
 function Player:stop_all()
   for _, name in ipairs(NAMES) do
     local out = self.outputs[name]
-    if out then out.stop() end
+    if out and self.on[name] then out.stop() end
   end
   self.tip, self.live = nil, {}
 end
