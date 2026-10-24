@@ -58,9 +58,12 @@ local function connect_tablet(gone)
   end
   local port = tablet.port
   if not port then port = Tablet.pick(devices) end
+  local target = (port and devices[port].name ~= "") and port or nil
+  -- Leaving the port a stroke may be on: lift it before the old handler is dropped.
+  if active_port and target ~= active_port then tablet:removed() end
   if active_port then hid.vports[active_port].event = nil end
   active_port = nil
-  if port and devices[port].name ~= "" then
+  if target then
     local vp = hid.connect(port)
     vp.event = function(t, c, v) tablet:event(t, c, v) end
     tablet:set_model(vp.name)

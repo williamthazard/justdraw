@@ -52,6 +52,8 @@ function Player:prune()
 end
 
 function Player:pen_down(d)
+  -- A stroke still open (the tablet changed under it) is lifted first: no stuck note or trail.
+  if self.tip then self:pen_up({ p = self.tip.p }) end
   self.hover = nil
   self.tip = { x = d.x, y = d.y, p = d.p }
   self.live = {}
