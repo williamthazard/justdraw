@@ -41,14 +41,18 @@ function Tablet.new(o)
   return self
 end
 
+-- The first device whose name looks like the tablet; among those, the first that reports
+-- pressure (has_pressure == true; nil means unknown and does not count as false).
 function Tablet.pick(devices)
+  local first
   for i, d in ipairs(devices) do
     local name = d.name or ""
     if name:find("CTL-472", 1, true) or name:find("CTL-672", 1, true) or name:find("Wacom", 1, true) then
-      return i
+      if d.has_pressure == true then return i end
+      first = first or i
     end
   end
-  return nil
+  return first
 end
 
 -- Which device to read: a port number, or nil for auto. Stored as a preference; the app

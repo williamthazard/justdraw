@@ -51,6 +51,18 @@ local function now() return util.time() end
 
 local function crow_here() return norns.crow.connected() end
 
+-- Does the device list ABS_PRESSURE (0x18) among its EV_ABS (3) codes? nil when it doesn't say.
+local function reports_pressure(device)
+  local codes = type(device) == "table" and device.codes
+  local abs = type(codes) == "table" and codes[3]
+  if type(abs) ~= "table" or next(abs) == nil then return nil end
+  if abs[0x18] ~= nil then return true end
+  for _, c in pairs(abs) do
+    if c == 0x18 then return true end
+  end
+  return false
+end
+
 -- Which hid port to read: the chosen one, or the first that looks like the tablet.
 -- `gone` is a device that is being unplugged and no longer counts.
 local function connect_tablet(gone)
@@ -58,7 +70,8 @@ local function connect_tablet(gone)
   for i = 1, 4 do
     local vp = hid.vports[i]
     local here = vp.device and vp.device ~= gone
-    devices[i] = { name = here and vp.name or "" }
+    devices[i] = { name = here and vp.name or "", has_pressure = nil }
+    if here then devices[i].has_pressure = reports_pressure(vp.device) end
   end
   local port = tablet.port
   if not port then port = Tablet.pick(devices) end
