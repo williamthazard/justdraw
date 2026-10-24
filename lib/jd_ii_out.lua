@@ -31,6 +31,7 @@ function JfOut.new(opts)
   local jf, connected, settings = opts.jf, opts.connected, opts.settings
   local o = { settings = settings }
   local ratio = 0.7
+  local enabled = false -- knobs reach the module only while the output is switched on
   local ch = 0         -- the channel of the latest touch
   local sounding = false
   local pitch_v = 0    -- the latest pitch, in volts
@@ -44,6 +45,7 @@ function JfOut.new(opts)
   function o.reconnected() o.apply_settings() end
 
   function o.enable()
+    enabled = true
     if not connected() then return end
     o.apply_settings()
     jf.run_mode(1)
@@ -78,12 +80,13 @@ function JfOut.new(opts)
   function o.knob(key, value)
     if key ~= "ratio" then return end
     ratio = value
-    if not connected() then return end
+    if not enabled or not connected() then return end
     jf.run(M.run_volts(ratio))
   end
 
-  o.disable = release
-  o.stop = release
+  -- The module's settings are left alone; only a sounding note is released.
+  function o.disable() enabled = false; release() end
+  function o.stop() enabled = false; release() end
 
   return o
 end
@@ -96,6 +99,7 @@ function WsynOut.new(opts)
   local o = { settings = settings }
   local noise = opts.noise or 2
   local ratio = 0.7
+  local enabled = false -- knobs reach the module only while the output is switched on
   local v = 0          -- the voice of the latest touch
   local sounding = false
   local x_now = 0
@@ -126,6 +130,7 @@ function WsynOut.new(opts)
   end
 
   function o.enable()
+    enabled = true
     if not connected() then return end
     reset()
     o.apply_settings()
@@ -161,13 +166,14 @@ function WsynOut.new(opts)
     if connected() and settings.hold then wsyn.velocity(v, 0) end
   end
 
+  -- Stored always; sent only while switched on (enable sends the latest values).
   function o.knob(key, value)
     if key == "noise" then
       noise = value
-      if connected() then send_fm_index() end
+      if enabled and connected() then send_fm_index() end
     elseif key == "ratio" then
       ratio = value
-      if connected() then wsyn.fm_ratio(ratio, 1) end
+      if enabled and connected() then wsyn.fm_ratio(ratio, 1) end
     end
   end
 
@@ -177,8 +183,8 @@ function WsynOut.new(opts)
     if connected() then wsyn.velocity(v, 0) end
   end
 
-  o.disable = silence
-  o.stop = silence
+  function o.disable() enabled = false; silence() end
+  function o.stop() enabled = false; silence() end
 
   return o
 end
