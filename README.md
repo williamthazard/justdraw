@@ -4,8 +4,8 @@ a one-voice instrument for norns, played on a wacom one pen tablet. the tablet p
 into norns. nothing else is needed.
 
 the voice is a just friends-style oscillator. it glides in pitch as the pen moves up and down,
-gets louder with pressure, and goes from a clean sine to a noisy, folded sound as the pen
-moves to the right. it can also play a midi synth and a modular through crow, alone or together.
+gets louder with pressure, and morphs through sine, curves, saw and pulse into fm noise as the
+pen moves to the right. it doesn't fold. it can also play a midi synth and a modular through crow, alone or together.
 
 ## install
 
@@ -17,7 +17,7 @@ the first install needs a norns restart, so the new engine registers.
 ## the pen
 
 - the pen's height on the tablet is pitch. it glides across the dots; there are no steps.
-- the pen's side to side position is the sound: sine on the left, noisy on the right.
+- the pen's side to side position is the sound: sine on the left, then curves, saw and pulse, then fm noise on the right.
 - pressure is loudness. a light touch is quiet.
 - the two buttons on the pen shift the octave up and down. a press while the pen hovers applies
   to the next note.
@@ -58,10 +58,17 @@ all in params, so a pset saves and loads every one of them.
 - outputs: engine, midi, crow, just friends, w/syn
 - midi: device, channel, bend range, x cc, send cc
 - just friends mode (normal or synthesis); w/syn voices, lpg time, lpg symmetry, hold or pluck
-- effects (engine only): reverb and delay. delay sync is "1" by default, so the delay lasts one
-  beat of the norns clock and follows its tempo, whether that is set in params, by link, by midi
-  or by crow. pick a division from 1/16 to 8 beats, capped at 8 seconds. choose "free" to set
-  delay time yourself, in seconds.
+- effects (engine only), all off by default:
+  - reverb: "reverb send" sets how much of the voice goes in; room, damp and level shape it.
+  - delay: "delay send" sets how much goes in; decay, level, "delay to reverb" and "delay to dry"
+    route it. delay sync is "1" by default, so the delay lasts one beat of the norns clock and
+    follows its tempo, whether that is set in params, by link, by midi or by crow. pick a division
+    from 1/16 to 8 beats, capped at 8 seconds. choose "free" to set delay time yourself, in seconds.
+  - carter's delay: a granular delay (from schicksalslied 2) that stays unallocated until the
+    "carter's delay" switch is on. "send to delay" feeds it and "delay level" sets its volume. the
+    granular switches are freeze, octaves, fifths & 4ths, sub-octaves and reverse. a feedback
+    patch (amp, balance, hpf, and noise and sine injection) writes back into the delay. grain
+    delay scale takes effect the next time the switch goes off and on.
 
 ## good to know
 
