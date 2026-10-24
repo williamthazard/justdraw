@@ -72,6 +72,14 @@ local function connect_tablet(gone)
   dirty = true
 end
 
+-- norns' crow.ii.<module> returns a one-off table that every index appends to, so a cached
+-- module accumulates the names of earlier calls. Resolve it afresh on every call.
+local function ii_module(name)
+  return setmetatable({}, { __index = function(_, fn)
+    return function(...) return crow.ii[name][fn](...) end
+  end })
+end
+
 function init()
   local function ports()
     local names = {}
@@ -84,8 +92,8 @@ function init()
 
   midi_out = MidiOut.new(NO_DEVICE)
   crow_out = CrowOut.new{ crow = crow, connected = crow_here }
-  jf_out = Ii.Jf.new{ jf = crow.ii.jf, connected = crow_here, settings = jf_settings }
-  wsyn_out = Ii.Wsyn.new{ wsyn = crow.ii.wsyn, connected = crow_here, settings = wsyn_settings }
+  jf_out = Ii.Jf.new{ jf = ii_module('jf'), connected = crow_here, settings = jf_settings }
+  wsyn_out = Ii.Wsyn.new{ wsyn = ii_module('wsyn'), connected = crow_here, settings = wsyn_settings }
 
   player = Player.new{
     outputs = {
