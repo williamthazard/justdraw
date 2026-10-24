@@ -11,10 +11,27 @@ local OUTPUTS = {
   { "jf", "Just Friends", 0 }, { "wsyn", "w/syn", 0 },
 }
 
+-- Delay sync: option 1 is free; the rest are beat counts (schicksalslied 2's list).
+local SYNC_OPTIONS = { "free", "1/16", "1/12", "1/8", "1/6", "3/16", "1/4", "1/3", "3/8", "1/2",
+  "2/3", "3/4", "1", "4/3", "3/2", "2", "8/3", "3", "4", "5", "6", "7", "8" }
+local SYNC_BEATS = { 1/16, 1/12, 1/8, 1/6, 3/16, 1/4, 1/3, 3/8, 1/2, 2/3, 3/4, 1, 4/3, 3/2, 2,
+  8/3, 3, 4, 5, 6, 7, 8 }
+local MAX_DELAY = 8
+
+-- The delay time in seconds: the delay_time param while free, else the beats at beat_sec,
+-- capped at the engine's longest delay.
+function Params.delay_time_now(p, beat_sec)
+  local i = p:get("delay_sync")
+  if i == 1 then return p:get("delay_time") end
+  return math.min(SYNC_BEATS[i - 1] * beat_sec, MAX_DELAY)
+end
+
 function Params.add(p, deps)
   local player = deps.player
   local midi_out, jf_out, wsyn_out, tablet = deps.midi_out, deps.jf_out, deps.wsyn_out, deps.tablet
   local connect = deps.midi_connect or function(port) return midi.connect(port) end
+
+  local beat_sec = deps.beat_sec or function() return clock.get_beat_sec() end
 
   local function on(id) return p:get(id) == 1 end
 
@@ -98,14 +115,25 @@ function Params.add(p, deps)
 
   -- Reverb and delay live in the engine, after the voice. Each action sends its value to the
   -- engine command of the same name; params:bang() then brings the engine in line.
-  p:add_group("effects", "effects", 10)
+  p:add_group("effects", "effects", 11)
   local function fx(id, name, min, max, warp, default, units, command)
     p:add_control(id, name, controlspec.new(min, max, warp, 0, default, units))
     p:set_action(id, function(v) engine[command](v) end)
   end
   fx("reverb_send", "reverb send", 0, 1, "lin", 0, "", "set_reverb_send")
   fx("delay_send", "delay send", 0, 1, "lin", 0, "", "set_delay_send")
-  fx("delay_time", "delay time", 0.01, 8, "lin", 0.3, "s", "set_delay_time")
+  -- delay_sync (default "1", one beat) follows the norns clock; delay_time is the free setting,
+  -- shown only while free. justdraw.lua re-sends the synced time when the tempo changes.
+  p:add_option("delay_sync", "delay sync", SYNC_OPTIONS, 13)
+  p:add_control("delay_time", "delay time", controlspec.new(0.01, 8, "lin", 0, 0.3, "s"))
+  p:set_action("delay_time", function(v)
+    if p:get("delay_sync") == 1 then engine.set_delay_time(v) end
+  end)
+  p:set_action("delay_sync", function(i)
+    if i == 1 then p:show("delay_time") else p:hide("delay_time") end
+    if _menu then _menu.rebuild_params() end
+    engine.set_delay_time(Params.delay_time_now(p, beat_sec()))
+  end)
   fx("delay_decay", "delay decay", 0.01, 60, "exp", 0.5, "s", "set_delay_decay")
   fx("delay_level", "delay level", 0, 2, "lin", 1, "", "set_delay_level")
   fx("delay_to_reverb", "delay to reverb", 0, 1, "lin", 1, "", "set_delay_to_reverb")

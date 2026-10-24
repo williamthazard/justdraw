@@ -58,6 +58,10 @@ all in params, so a pset saves and loads every one of them.
 - outputs: engine, midi, crow, just friends, w/syn
 - midi: device, channel, bend range, x cc, send cc
 - just friends mode (normal or synthesis); w/syn voices, lpg time, lpg symmetry, hold or pluck
+- effects (engine only): reverb and delay. delay sync is "1" by default, so the delay lasts one
+  beat of the norns clock and follows its tempo, whether that is set in params, by link, by midi
+  or by crow. pick a division from 1/16 to 8 beats, capped at 8 seconds. choose "free" to set
+  delay time yourself, in seconds.
 
 ## good to know
 

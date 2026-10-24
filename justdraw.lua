@@ -39,6 +39,10 @@ local status                       -- shown on screen when something is wrong
 local overlay                      -- { text, until }
 local dirty = true
 local prior_crow_add
+local prior_tempo_handler
+local last_tempo
+local poll_at = 0
+local TEMPO_POLL = 0.25            -- seconds between tempo checks
 
 -- Stands in for the MIDI device until the bang connects the one the param names.
 local NO_DEVICE = setmetatable({}, { __index = function() return function() end end })
@@ -81,6 +85,14 @@ local function ii_module(name)
   return setmetatable({}, { __index = function(_, fn)
     return function(...) return crow.ii[name][fn](...) end
   end })
+end
+
+-- Re-sends the delay time when it follows the clock. Call after the tempo changes.
+local function resync_delay()
+  last_tempo = clock.get_tempo()
+  if params:get("delay_sync") > 1 then
+    engine.set_delay_time(Params.delay_time_now(params, clock.get_beat_sec()))
+  end
 end
 
 function init()
@@ -153,10 +165,22 @@ function init()
     tablet = tablet, ports = ports,
   })
 
+  -- A tempo edit in PARAMETERS calls the handler; the redraw metro's poll catches the rest.
+  prior_tempo_handler = clock.tempo_change_handler
+  clock.tempo_change_handler = function(...)
+    if prior_tempo_handler then prior_tempo_handler(...) end
+    resync_delay()
+  end
+
   redraw_metro = metro.init()
   redraw_metro.time = 1 / FPS
   redraw_metro.event = function()
     player:prune()
+    -- Link, MIDI and crow clocks change the tempo without calling the handler: poll for it.
+    if now() >= poll_at then
+      poll_at = now() + TEMPO_POLL
+      if math.abs(clock.get_tempo() - last_tempo) > 0.01 then resync_delay() end
+    end
     if overlay and now() >= overlay["until"] then overlay = nil; dirty = true end
     local fading = #player.trails > 0
     local flashing = player.flash_at and now() - player.flash_at < 0.5
@@ -168,6 +192,7 @@ function init()
   redraw_metro:start()
 
   params:bang()
+  last_tempo = clock.get_tempo()
 end
 
 function enc(n, d)
@@ -205,5 +230,6 @@ function cleanup()
   if sched_metro then sched_metro:stop() end
   if active_port then hid.vports[active_port].event = nil end
   if prior_crow_add then norns.crow.add = prior_crow_add end
+  if player then clock.tempo_change_handler = prior_tempo_handler end
   if player then player:stop_all() end
 end
