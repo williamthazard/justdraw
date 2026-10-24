@@ -51,6 +51,13 @@ function Tablet.pick(devices)
   return nil
 end
 
+-- Which device to read: a port number, or nil for auto. Stored as a preference; the app
+-- sets on_select to re-open the device when the param changes.
+function Tablet:select(port)
+  self.port = port
+  if self.on_select then self.on_select(port) end
+end
+
 function Tablet:set_flip(b) self.flip = b and true or false end
 
 function Tablet:set_model(name)
