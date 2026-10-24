@@ -51,7 +51,7 @@ function Params.add(p, deps)
   end
 
   p:add_separator("jd_midi", "MIDI")
-  p:add_number("midi_device", "device", 1, 16, 1, "", function(param)
+  p:add_number("midi_device", "device", 1, 16, 1, function(param)
     local n = param:get()
     return (deps.ports and deps.ports()[n]) or ("port " .. n)
   end)
