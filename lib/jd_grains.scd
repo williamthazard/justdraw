@@ -19,7 +19,7 @@
 		BufWr.ar(sig, buf, ptr);
 	}),
 	// Feedback patch: the main output, balanced, softclipped and high-passed (plus optional noise
-	// and sine), written back to the recorder's bus.
+	// and sine), summed to one channel and written back to the recorder's bus.
 	SynthDef(\jd_fbmix, { |in = 0, out = 0, amp = 0, amp_slew = 0.05, balance = 0,
 		hpFreq = 12, noiseLevel = 0, sineLevel = 0, sineHz = 55|
 		var input = InFeedback.ar(in, 2);
@@ -27,7 +27,7 @@
 		sig = sig + (PinkNoise.ar * noiseLevel);
 		sig = sig + (SinOsc.ar(sineHz) * sineLevel);
 		sig = HPF.ar(sig, hpFreq.max(5));
-		Out.ar(out, sig.softclip * amp.lag3(amp_slew));
+		Out.ar(out, Mix(sig).softclip * amp.lag3(amp_slew));
 	}),
 	// Grain synth: reads the delay buffer at randomized rates and positions.
 	SynthDef(\jd_gran, { |amp = 0, amp_slew = 0.05, buf = 0, out = 0, atk = 1, rel = 1, gate = 1,
