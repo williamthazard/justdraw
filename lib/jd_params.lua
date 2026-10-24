@@ -2,7 +2,7 @@
 -- the deps; init() ends with params:bang(), so the defaults reach every output.
 -- `p` is the paramset (norns' `params`). deps = { player, midi_out, jf_out, wsyn_out,
 -- tablet, ports = fn() -> names, midi_connect = fn(port) -> device (default: midi.connect) }.
--- Lua 5.3 compatible. Uses the norns global `controlspec` and (by default) `midi`.
+-- Lua 5.3 compatible. Uses the norns globals `controlspec` and `engine` and (by default) `midi`.
 local Params = {}
 
 local ROOTS = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" }
@@ -95,6 +95,24 @@ function Params.add(p, deps)
   p:add_option("wsyn_hold", "w/syn envelope", { "hold", "pluck" }, 1)
   p:set_action("wsyn_hold", ii_setting("out_wsyn", wsyn_out,
     function(s, i) s.hold = (i == 1) end))
+
+  -- Reverb and delay live in the engine, after the voice. Each action sends its value to the
+  -- engine command of the same name; params:bang() then brings the engine in line.
+  p:add_group("effects", "effects", 10)
+  local function fx(id, name, min, max, warp, default, units, command)
+    p:add_control(id, name, controlspec.new(min, max, warp, 0, default, units))
+    p:set_action(id, function(v) engine[command](v) end)
+  end
+  fx("reverb_send", "reverb send", 0, 1, "lin", 0, "", "set_reverb_send")
+  fx("delay_send", "delay send", 0, 1, "lin", 0, "", "set_delay_send")
+  fx("delay_time", "delay time", 0.01, 8, "lin", 0.3, "s", "set_delay_time")
+  fx("delay_decay", "delay decay", 0.01, 60, "exp", 0.5, "s", "set_delay_decay")
+  fx("delay_level", "delay level", 0, 2, "lin", 1, "", "set_delay_level")
+  fx("delay_to_reverb", "delay to reverb", 0, 1, "lin", 1, "", "set_delay_to_reverb")
+  fx("delay_to_dry", "delay to dry", 0, 1, "lin", 0, "", "set_delay_to_dry")
+  fx("reverb_room", "reverb room", 0, 1, "lin", 0.5, "", "set_reverb_room")
+  fx("reverb_damp", "reverb damp", 0, 1, "lin", 0.5, "", "set_reverb_damp")
+  fx("reverb_level", "reverb level", 0, 2, "lin", 1, "", "set_reverb_level")
 end
 
 return Params
