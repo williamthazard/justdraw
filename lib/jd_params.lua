@@ -113,6 +113,71 @@ function Params.add(p, deps)
   fx("reverb_room", "reverb room", 0, 1, "lin", 0.5, "", "set_reverb_room")
   fx("reverb_damp", "reverb damp", 0, 1, "lin", 0.5, "", "set_reverb_damp")
   fx("reverb_level", "reverb level", 0, 2, "lin", 1, "", "set_reverb_level")
+
+  -- Carter's delay: schicksalslied 2's granular chain, ported. It stays unallocated until grains_on
+  -- is switched on. Each action sends its value to the engine, which stores it until the chain
+  -- is allocated; params:bang() then brings the engine in line.
+  p:add_group("carters_delay", "carter's delay", 37)
+  p:add_binary("grains_on", "carter's delay", "toggle", 0)
+  p:set_action("grains_on", function(v) engine.grains_on(v) end)
+  local function grain(id, name, min, max, warp, step, default, units, command)
+    p:add_control(id, name, controlspec.new(min, max, warp, step, default, units))
+    p:set_action(id, function(v) engine[command](v) end)
+  end
+  local function grain_option(id, name, options, command)
+    p:add_option(id, name, options, 1)
+    p:set_action(id, function(i) engine[command](i - 1) end)
+  end
+  local OFF_ON = { "off", "on" }
+  grain("grains_send", "send to delay", 0, 1, "lin", 0.01, 0, "", "set_grains_send")
+  grain("grains_level", "delay level", 0, 1, "lin", 0.01, 0.3, "", "set_grains_level")
+
+  p:add_separator("jd_grain_engine", "granular engine")
+  grain_option("granular_freeze", "granular freeze", OFF_ON, "set_grains_freeze")
+  -- The delay buffer is not saved, so recalling "on" would bring the chain up frozen on silence.
+  p:set_save("granular_freeze", false)
+  grain("buffer_preservation", "buffer preservation", 0, 1, "lin", 0.01, 0, "", "set_grains_rec_pre")
+  grain_option("grain_window", "grain window", { "hann", "percussive", "swell", "reverse swell" },
+    "set_grains_window")
+  grain("grain_sync_distribution", "grain sync distribution", 0, 1, "lin", 0.01, 1, "",
+    "set_grains_sync")
+  grain("granular_cutoff_ceiling", "grain cutoff ceiling", 200, 16000, "exp", 1, 16000, "Hz",
+    "set_grains_cutoff_ceiling")
+  grain("grain_rate_mult", "grain rate mult", 0.25, 4, "lin", 0.01, 1, "x", "set_grains_rate_mult")
+  grain_option("grain_octaves", "grain octaves", OFF_ON, "set_grains_octaves")
+  grain_option("grain_fifths", "grain fifths & 4ths", OFF_ON, "set_grains_fifths")
+  grain_option("grain_suboctaves", "grain sub-octaves", OFF_ON, "set_grains_suboctaves")
+  grain_option("grain_reverse", "grain reverse", OFF_ON, "set_grains_reverse")
+  -- Takes effect the next time the chain is allocated (switch carter's delay off and on).
+  grain("grain_delay_scale", "grain delay scale", 0.01, 2, "lin", 0.01, 1, "", "set_grains_delay_scale")
+
+  p:add_separator("jd_grain_fb", "feedback patch")
+  grain("feedback_amp", "feedback amp", 0, 2, "lin", 0.01, 0, "", "set_grains_fb_amp")
+  grain("feedback_balance", "feedback balance", -1, 1, "lin", 0.01, 0, "", "set_grains_fb_balance")
+  grain("feedback_hpf", "feedback hpf", 5, 2000, "exp", 1, 12, "Hz", "set_grains_fb_hpf")
+  p:add_separator("jd_grain_fb_adv", "(advanced)")
+  grain("noise_inject_level", "noise inject level", 0, 1, "lin", 0.01, 0, "", "set_grains_fb_noise")
+  grain("sine_inject_level", "sine inject level", 0, 1, "lin", 0.01, 0, "", "set_grains_fb_sine_level")
+  grain("sine_inject_freq", "sine inject freq", 20, 2000, "exp", 0.1, 55, "Hz", "set_grains_fb_sine_hz")
+
+  p:add_separator("jd_grain_lfo", "grain LFO rates")
+  local LFOS = { { "pan", "pan" }, { "cutoff", "cutoff" }, { "res", "res" } }
+  for n = 0, 3 do
+    for _, l in ipairs(LFOS) do
+      local id = "grain_" .. n .. "_" .. l[1] .. "_rate"
+      p:add_control(id, "grain " .. (n + 1) .. " " .. l[2] .. " rate",
+        controlspec.new(1, 64, "lin", 0.1, math.random(1, 64), "beats"))
+      p:set_action(id, function(v) engine["set_grains_" .. l[1] .. "_rate"](n, v) end)
+    end
+  end
+  p:add_trigger("randomize_grain_lfo_rates", "randomize all grain LFO rates")
+  p:set_action("randomize_grain_lfo_rates", function()
+    for n = 0, 3 do
+      for _, l in ipairs(LFOS) do
+        p:set("grain_" .. n .. "_" .. l[1] .. "_rate", math.random(10, 6400) / 100)
+      end
+    end
+  end)
 end
 
 return Params
