@@ -68,7 +68,14 @@ function CrowOut.new(opts)
   end
 
   o.disable = silence
-  o.stop = silence
+
+  -- Script cleanup also parks x at 0 V (spec 5.6); a switch-off leaves it where it was.
+  function o.stop()
+    if not active() then return end
+    silence()
+    crow.output[4].volts = 0
+    sent = {}
+  end
 
   return o
 end
