@@ -97,7 +97,7 @@ local WsynOut = {}
 function WsynOut.new(opts)
   local wsyn, connected, settings = opts.wsyn, opts.connected, opts.settings
   local o = { settings = settings }
-  local noise = opts.noise or 2
+  local noise = opts.noise or 0.5
   local ratio = 0.7
   local enabled = false -- knobs reach the module only while the output is switched on
   local v = 0          -- the voice of the latest touch

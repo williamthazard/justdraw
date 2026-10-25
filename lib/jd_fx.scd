@@ -13,7 +13,7 @@
 		// Carter's delay records a mono sum; nothing reads grainsOut while the chain is off.
 		Out.ar(grainsOut, (sig[0] + sig[1]) * 0.5 * grains_send.lag(0.05));
 	}),
-	SynthDef(\jd_delay, { |in = 0, out = 0, reverbOut = 0, delayTime = 0.3, decayTime = 0.5,
+	SynthDef(\jd_delay, { |in = 0, out = 0, reverbOut = 0, delayTime = 0.3, decayTime = 15,
 		amp = 1, amp_slew = 0.1, to_reverb = 1, to_dry = 0|
 		var sig = In.ar(in, 2);
 		// CombL's maximum is 8 s: 16 s overran the real-time memory pool on norns in Lied.

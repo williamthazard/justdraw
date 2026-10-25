@@ -6,7 +6,7 @@
 // a sine at `ratio` x the pitch turns it to broadband noise at the right edge.
 // x walks a path through them: 0 sine, 0.2 exp curves, 0.4 linear near-saw, 0.7 log, 1 near-square + deep FM.
 // No folding or saturation: the noise comes from modulation, not clipping.
-SynthDef(\jd_voice, { |out = 0, note = 48, intensity = 0, pressure = 0, gate = 1, release = 0.5, ratio = 0.7, noise = 2|
+SynthDef(\jd_voice, { |out = 0, note = 48, intensity = 0, pressure = 0, gate = 1, release = 0.5, ratio = 0.7, noise = 0.5|
 	var p = Lag.kr(pressure, 0.02);
 	// pressing hard pushes the morph a little further right
 	var x = (Lag.kr(intensity, 0.03) + (p * 0.08)).clip(0, 1);

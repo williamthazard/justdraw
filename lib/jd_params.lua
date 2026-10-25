@@ -41,7 +41,7 @@ function Params.add(p, deps)
     p:add_control(id, name, controlspec.new(min, max, warp, 0, default, units))
     p:set_action(id, function(v) player:set(id, v) end)
   end
-  knob("noise", "noise", 0, 24, "lin", 2, "")
+  knob("noise", "noise", 0, 24, "lin", 0.5, "")
   knob("ratio", "ratio", 0.5, 2, "exp", 0.7, "")
   knob("release", "release", 0.05, 3, "exp", 0.5, "s")
 
@@ -146,7 +146,7 @@ function Params.add(p, deps)
     if _menu then _menu.rebuild_params() end
     engine.set_delay_time(Params.delay_time_now(p, beat_sec()))
   end)
-  fx("delay_decay", "delay decay", 0.01, 60, "exp", 0.5, "s", "set_delay_decay")
+  fx("delay_decay", "delay decay", 0.01, 60, "exp", 15, "s", "set_delay_decay")
   fx("delay_level", "delay level", 0, 2, "lin", 1, "", "set_delay_level")
   fx("delay_to_reverb", "delay to reverb", 0, 1, "lin", 1, "", "set_delay_to_reverb")
   fx("delay_to_dry", "delay to dry", 0, 1, "lin", 0, "", "set_delay_to_dry")

@@ -2,7 +2,7 @@
 // The only SuperCollider class in the script; the SynthDefs live in jd_voice.scd and jd_fx.scd.
 Engine_JustDraw : CroneEngine {
 	var voiceBus, reverbBus, delayBus, voiceGroup, fxGroup, outGroup, outSynth, sends, delay, reverb, voice;
-	var noise = 2, ratio = 0.7, release = 0.5;
+	var noise = 0.5, ratio = 0.7, release = 0.5;
 	// Carter's delay (jd_grains.scd): nothing is allocated until grains_on 1. grainSet holds every
 	// setting, so values sent while the chain is off (or still allocating) apply when it comes up.
 	var grainsBus, grainsOn = false, grainsLive = false, grainsGen = 0;

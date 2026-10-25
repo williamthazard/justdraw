@@ -14,7 +14,7 @@ function Player.new(o)
   self.now = o.now or function() return 0 end
   self.on_octave = o.on_octave
   self.root, self.octave = 0, 3
-  self.noise, self.ratio, self.release = 2, 0.7, 0.5
+  self.noise, self.ratio, self.release = 0.5, 0.7, 0.5
   self.on = {}     -- name -> switched on
   self.live = {}   -- name -> got this stroke's down
   -- The tip while it is down ({x,y,p} or nil). Named tip, not pen: the method is :pen.
