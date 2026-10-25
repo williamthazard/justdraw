@@ -1,7 +1,7 @@
 // just draw's engine: one morphing voice, played from the tablet.
 // The only SuperCollider class in the script; the SynthDefs live in jd_voice.scd and jd_fx.scd.
 Engine_JustDraw : CroneEngine {
-	var voiceBus, reverbBus, delayBus, voiceGroup, fxGroup, sends, delay, reverb, voice;
+	var voiceBus, reverbBus, delayBus, voiceGroup, fxGroup, outGroup, outSynth, sends, delay, reverb, voice;
 	var noise = 2, ratio = 0.7, release = 0.5;
 	// Carter's delay (jd_grains.scd): nothing is allocated until grains_on 1. grainSet holds every
 	// setting, so values sent while the chain is off (or still allocating) apply when it comes up.
@@ -39,6 +39,13 @@ Engine_JustDraw : CroneEngine {
 			\grainsOut, grainsBus
 		], fxGroup);
 
+		// The tail of everything: outGroup comes right after fxGroup, and every group made later
+		// (Carter's delay allocates its three with Group.after(fxGroup)) lands between them, so
+		// \jd_out always runs last. -10 dB (0.316) until the script's param sends its value.
+		outGroup = Group.after(fxGroup);
+		outSynth = Synth.new(\jd_out, [\out, context.out_b, \level, 10 ** (-10 / 20)], outGroup);
+
+		this.addCommand(\set_out_level, "f", { arg msg; outSynth.set(\level, msg[1]) });
 		this.addCommand(\voice_on, "fff", { arg msg;
 			this.releaseVoice;
 			voice = Synth.new(\jd_voice, [
@@ -254,6 +261,8 @@ Engine_JustDraw : CroneEngine {
 		sends.free;
 		delay.free;
 		reverb.free;
+		outSynth.free;
+		outGroup.free;
 		fxGroup.free;
 		voiceGroup.free;
 		voiceBus.free;
