@@ -62,11 +62,11 @@ function Screen.draw(s, player, ui, now)
   s.aa(0)
   if ui.readings then return readings(s, ui.readings) end
 
-  -- the dot grid
+  -- the dot grid, a whole pixel each: with aa off, a 0.5 circle near a pixel corner lights nothing
   s.level(2)
   for col = 1, 15 do
     for row = 1, 10 do
-      s.circle(col / 16 * W, row / 11 * H, 0.5)
+      s.pixel(math.floor(col / 16 * W), math.floor(row / 11 * H))
       s.fill()
     end
   end
