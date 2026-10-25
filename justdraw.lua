@@ -1,20 +1,21 @@
--- just draw
--- a one-voice instrument
--- played on a wacom one pen tablet
---
--- plug the tablet into norns.
--- the pen's y is pitch, x is sound,
--- pressure is loudness.
---
--- E1: noise
--- E2: ratio
--- E3: release
--- K2: octave down
--- K3: octave up
---
--- outputs (engine, midi, crow,
--- just friends, w/syn) and every
--- other setting live in PARAMS.
+---just draw
+---
+---draw on a wacom one
+---to play one voice.
+---
+---y is pitch
+---x is the sound
+---pressure is loudness
+---pen buttons: octave
+---
+---E1: noise
+---E2: ratio
+---E3: release
+---K2: octave down
+---K3: octave up
+---
+---outputs and other
+---settings: PARAMS
 
 engine.name = 'JustDraw'
 
