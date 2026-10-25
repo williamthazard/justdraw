@@ -52,6 +52,13 @@ each output is switched on or off in params. engine is on at first; the rest are
 all in params, so a pset saves and loads every one of them.
 
 - noise, ratio, release
+- engine level: the engine's output level in dB (-60 to +6, -10 at first). a safety limiter at
+  -1 dBFS always sits after it, so a loud moment is held down instead of overloading norns. if the
+  sound is still too loud, lower the engine level; if it is too quiet, raise it.
+- tablet readings: switch on to show the tablet's raw numbers in place of the normal screen: the
+  largest x, y and pressure since you switched it on, the last pen button pressed (upper or lower,
+  and which code it sent) and the live x, y and pressure. it is for checking the tablet's range and
+  which pen button is which. playing still works underneath. it is not saved in a pset.
 - root and octave
 - flip 180: turns the tablet around
 - tablet: auto, or a hid port 1 to 4

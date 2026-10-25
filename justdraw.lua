@@ -177,6 +177,7 @@ function init()
   Params.add(params, {
     player = player, midi_out = midi_out, jf_out = jf_out, wsyn_out = wsyn_out,
     tablet = tablet, ports = ports,
+    on_readings = function() dirty = true end,
   })
 
   -- A tempo edit in PARAMETERS calls the handler; the redraw metro's poll catches the rest.
@@ -189,7 +190,10 @@ function init()
   redraw_metro = metro.init()
   redraw_metro.time = 1 / FPS
   redraw_metro.event = function()
+    local trails = #player.trails
     player:prune()
+    -- the last trail just expired: draw once more so its partly faded frame does not stay on screen
+    if #player.trails ~= trails then dirty = true end
     -- Link, MIDI and crow clocks change the tempo without calling the handler: poll for it.
     if now() >= poll_at then
       poll_at = now() + TEMPO_POLL
@@ -198,7 +202,8 @@ function init()
     if overlay and now() >= overlay["until"] then overlay = nil; dirty = true end
     local fading = #player.trails > 0
     local flashing = player.flash_at and now() - player.flash_at < 0.5
-    if dirty or fading or flashing then
+    local reading = params:get("tablet_readings") == 1     -- the readings page redraws continuously
+    if dirty or fading or flashing or reading then
       dirty = false
       redraw()
     end
@@ -236,6 +241,7 @@ function redraw()
     overlay = overlay,
     status = status,
     flip = params:get("flip") == 1,
+    readings = params:get("tablet_readings") == 1 and tablet:readings() or nil,
   }, now())
 end
 

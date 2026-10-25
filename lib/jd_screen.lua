@@ -35,9 +35,32 @@ local function trail(s, player, now)
   end
 end
 
+-- The raw tablet values in place of the normal page (PARAMS > tablet readings).
+local function readings(s, r)
+  s.font_face(1)
+  s.font_size(8)
+  s.level(15)
+  local lines = {
+    "max x " .. r.max_x, "max y " .. r.max_y, "max p " .. r.max_p,
+    "button " .. (r.button and (r.button .. " (" .. tostring(r.button_code) .. ")") or "none"),
+  }
+  for i, line in ipairs(lines) do
+    s.move(2, 8 + (i - 1) * 9)
+    s.text(line)
+  end
+  s.level(8)
+  s.move(2, 52)
+  s.text("x " .. r.x .. "  y " .. r.y .. "  p " .. r.p)
+  s.level(3)
+  s.move(2, 61)
+  s.text("PARAMS > tablet readings")
+  s.update()
+end
+
 function Screen.draw(s, player, ui, now)
   s.clear()
   s.aa(0)
+  if ui.readings then return readings(s, ui.readings) end
 
   -- the dot grid
   s.level(2)

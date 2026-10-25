@@ -38,7 +38,26 @@ function Tablet.new(o)
   self.last_p = 0          -- last nonzero pressure of the stroke (0..1)
   self.hx, self.hy = nil, nil  -- last hover position emitted
   self.pending = false
+  self:reset_readings()
   return self
+end
+
+-- Raw values for the "tablet readings" page: the latest x, y and pressure, their largest since
+-- the last reset, and the last pen button pressed.
+function Tablet:reset_readings()
+  self.max_x, self.max_y, self.max_p = 0, 0, 0
+  self.btn_code = nil
+end
+
+function Tablet:readings()
+  local button, name
+  if self.btn_code == UPPER then button = "upper" elseif self.btn_code == LOWER then button = "lower" end
+  if self.btn_code == 0x14b then name = "STYLUS" elseif self.btn_code == 0x14c then name = "STYLUS2" end
+  return {
+    x = self.raw_x, y = self.raw_y, p = self.raw_p,
+    max_x = self.max_x, max_y = self.max_y, max_p = self.max_p,
+    button = button, button_code = name,
+  }
 end
 
 -- The first device whose name looks like the tablet; among those, the first that reports
@@ -76,10 +95,11 @@ function Tablet:event(type_, code, value)
     elseif code == UPPER then self.upper = value
     elseif code == LOWER then self.lower = value
     else return end
+    if (code == UPPER or code == LOWER) and value ~= 0 then self.btn_code = code end
   elseif type_ == EV_ABS then
-    if code == ABS_X then self.raw_x = value
-    elseif code == ABS_Y then self.raw_y = value
-    elseif code == ABS_PRESSURE then self.raw_p = value
+    if code == ABS_X then self.raw_x = value; if value > self.max_x then self.max_x = value end
+    elseif code == ABS_Y then self.raw_y = value; if value > self.max_y then self.max_y = value end
+    elseif code == ABS_PRESSURE then self.raw_p = value; if value > self.max_p then self.max_p = value end
     else return end   -- ABS_DISTANCE and the rest
   else
     return
