@@ -1,11 +1,16 @@
 -- Tablet reader: raw Linux HID events (type, code, value) from a Wacom One become pen events.
--- No norns globals; Lua 5.3 compatible. The caller passes emit and schedule.
+-- No norns globals; Lua 5.3 compatible. The caller passes emit, schedule and now.
 local Tablet = {}
 Tablet.__index = Tablet
 
 -- Which pen button is which. Swap here if the user's reading says the other way round.
 local UPPER = 0x14c   -- BTN_STYLUS2
 local LOWER = 0x14b   -- BTN_STYLUS
+
+-- A pen in range but not touching that sends nothing for this long (s) is taken as gone: the
+-- tablet sometimes never reports BTN_TOOL_PEN = 0 when the pen leaves fast. A pen in a hand is
+-- never this still (the tablet resolves about 0.01 mm); one lying on the table is.
+local IDLE = 1.0
 
 local EV_KEY, EV_ABS = 1, 3
 local BTN_TOOL_PEN, BTN_TOUCH = 0x140, 0x14a
@@ -26,6 +31,9 @@ function Tablet.new(o)
   local self = setmetatable({}, Tablet)
   self.emit = o.emit
   self.schedule = o.schedule
+  self.now = o.now
+  self.last_event = self.now()   -- when the last raw event arrived
+  self.idled = false             -- hoverOff sent for silence; the tool state is untouched
   self.flip = o.flip and true or false
   self.max = MODELS["CTL-472"]
   -- pending state, updated by every event
@@ -89,6 +97,8 @@ function Tablet:set_model(name)
 end
 
 function Tablet:event(type_, code, value)
+  self.last_event = self.now()
+  self.idled = false
   if type_ == EV_KEY then
     if code == BTN_TOOL_PEN then self.tool = value ~= 0
     elseif code == BTN_TOUCH then self.touch = value ~= 0
@@ -160,6 +170,17 @@ function Tablet:flush()
   self.was_touch, self.was_tool = self.touch, self.tool
   if up_edge then self.emit("octaveUp", {}) end
   if low_edge then self.emit("octaveDown", {}) end
+end
+
+-- Called often with the time: a pen in range, tip up, silent for IDLE seconds leaves the canvas.
+-- The tool state stays, so the next event brings the hover back (the forgotten position makes
+-- the flush emit it even at the same x and y). The tip down never times out.
+function Tablet:check_idle(t)
+  if self.idled or self.pending or not self.was_tool or self.was_touch then return end
+  if t - self.last_event < IDLE then return end
+  self.idled = true
+  self.hx, self.hy = nil, nil
+  self.emit("hoverOff", {})
 end
 
 -- The device was unplugged: leave range at once.

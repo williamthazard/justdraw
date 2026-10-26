@@ -174,6 +174,7 @@ function init()
 
   tablet = Tablet.new{
     emit = function(evt, d) player:pen(evt, d); dirty = true end,
+    now = now,
     schedule = function(f, secs)
       pending = f
       sched_metro:start(secs, 1)
@@ -214,6 +215,7 @@ function init()
   redraw_metro.time = 1 / FPS
   redraw_metro.event = function()
     local trails = #player.trails
+    tablet:check_idle(now())
     player:prune()
     -- the last trail just expired: draw once more so its partly faded frame does not stay on screen
     if #player.trails ~= trails then dirty = true end
