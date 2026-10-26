@@ -83,6 +83,11 @@ all in params, so a pset saves and loads every one of them.
     route it. delay sync is "1" by default, so the delay lasts one beat of the norns clock and
     follows its tempo, whether that is set in params, by link, by midi or by crow. pick a division
     from 1/16 to 8 beats, capped at 8 seconds. choose "free" to set delay time yourself, in seconds.
+  - audio input: "input to reverb", "input to delay" and "input to carter's" send norns' audio input
+    through the same effects, so a modular patched back into norns can blend with the voice. each
+    runs 0 to 1 and starts at 0. the dry input is not sent to the output here: it stays on
+    LEVELS > monitor in the norns menu, where it would otherwise be doubled.
+    careful: if the modular also receives norns' output, the loop can feed back.
   - carter's delay: a granular delay (from schicksalslied 2) that stays unallocated until the
     "carter's delay" switch is on. "send to delay" feeds it and "delay level" sets its volume.
     "carter's to reverb" sends a share of it into the reverb as well. the

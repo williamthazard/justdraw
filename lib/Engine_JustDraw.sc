@@ -1,7 +1,7 @@
 // just draw's engine: one morphing voice, played from the tablet.
 // The only SuperCollider class in the script; the SynthDefs live in jd_voice.scd and jd_fx.scd.
 Engine_JustDraw : CroneEngine {
-	var voiceBus, reverbBus, reverbRetBus, delayBus, voiceGroup, fxGroup, reverbGroup, outGroup, outSynth, sends, delay, reverb, voice;
+	var voiceBus, reverbBus, reverbRetBus, delayBus, voiceGroup, fxGroup, reverbGroup, outGroup, outSynth, inSynth, sends, delay, reverb, voice;
 	var noise = 0.5, ratio = 0.7, release = 0.5;
 	// Carter's delay (jd_grains.scd): nothing is allocated until grains_on 1. grainSet holds every
 	// setting, so values sent while the chain is off (or still allocating) apply when it comes up.
@@ -17,6 +17,7 @@ Engine_JustDraw : CroneEngine {
 
 	alloc {
 		var dir = PathName(this.class.filenameSymbol.asString).pathOnly;
+		var inBuses;
 		var defs = [thisProcess.interpreter.executeFile(dir +/+ "jd_voice.scd")]
 			++ thisProcess.interpreter.executeFile(dir +/+ "jd_fx.scd");
 		defs = defs ++ thisProcess.interpreter.executeFile(dir +/+ "jd_grains.scd");
@@ -36,6 +37,9 @@ Engine_JustDraw : CroneEngine {
 		// group of its own after fxGroup: voices, fxGroup (sends, delay), Carter's delay (its three
 		// groups come right after fxGroup), reverbGroup, then the output stage. Each new synth goes
 		// to the head of fxGroup, so adding delay, then sends runs them sends, delay.
+		// \jd_input (norns' audio input into the effects) joins the voices in voiceGroup, so it runs
+		// before everything that reads the buses it writes: the delay and reverb (reverbBus, delayBus)
+		// and Carter's recorder (grainsBus).
 		// The feedback patch (\jd_fbmix) runs before the reverb, so it hears the reverb through
 		// reverbRetBus, a copy of its output that it reads one block late.
 		reverbGroup = Group.after(fxGroup);
@@ -45,6 +49,14 @@ Engine_JustDraw : CroneEngine {
 			\in, voiceBus, \out, context.out_b, \reverbOut, reverbBus, \delayOut, delayBus,
 			\grainsOut, grainsBus
 		], fxGroup);
+
+		// context.in_b is norns' two mono input buses (a single stereo Bus is read as a pair too).
+		inBuses = if(context.in_b.isArray) { context.in_b.collect(_.index) }
+			{ [context.in_b.index, context.in_b.index + 1] };
+		inSynth = Synth.new(\jd_input, [
+			\inL, inBuses[0], \inR, inBuses[1], \reverbOut, reverbBus, \delayOut, delayBus,
+			\grainsOut, grainsBus
+		], voiceGroup);
 
 		// The tail of everything: outGroup comes right after reverbGroup, and every group made later
 		// (Carter's delay allocates its three with Group.after(fxGroup)) lands before reverbGroup, so
@@ -83,6 +95,8 @@ Engine_JustDraw : CroneEngine {
 		[
 			[\set_reverb_send, { sends }, \reverb_send], [\set_delay_send, { sends }, \delay_send],
 			[\set_grains_send, { sends }, \grains_send],
+			[\set_in_reverb_send, { inSynth }, \reverb_send], [\set_in_delay_send, { inSynth }, \delay_send],
+			[\set_in_grains_send, { inSynth }, \grains_send],
 			[\set_delay_time, { delay }, \delayTime], [\set_delay_decay, { delay }, \decayTime],
 			[\set_delay_level, { delay }, \amp], [\set_delay_to_reverb, { delay }, \to_reverb],
 			[\set_delay_to_dry, { delay }, \to_dry], [\set_reverb_room, { reverb }, \room],
@@ -269,6 +283,7 @@ Engine_JustDraw : CroneEngine {
 	free {
 		this.releaseVoice;
 		this.freeGrains;
+		inSynth.free;
 		sends.free;
 		delay.free;
 		reverb.free;

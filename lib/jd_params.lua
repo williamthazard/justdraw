@@ -130,13 +130,17 @@ function Params.add(p, deps)
 
   -- Reverb and delay live in the engine, after the voice. Each action sends its value to the
   -- engine command of the same name; params:bang() then brings the engine in line.
-  p:add_group("effects", "effects", 11)
+  p:add_group("effects", "effects", 14)
   local function fx(id, name, min, max, warp, default, units, command)
     p:add_control(id, name, controlspec.new(min, max, warp, 0, default, units))
     p:set_action(id, function(v) engine[command](v) end)
   end
   fx("reverb_send", "reverb send", 0, 1, "lin", 0, "", "set_reverb_send")
   fx("delay_send", "delay send", 0, 1, "lin", 0, "", "set_delay_send")
+  -- norns' audio input into the same effects. The dry input stays on LEVELS > monitor.
+  fx("in_reverb_send", "input to reverb", 0, 1, "lin", 0, "", "set_in_reverb_send")
+  fx("in_delay_send", "input to delay", 0, 1, "lin", 0, "", "set_in_delay_send")
+  fx("in_grains_send", "input to carter's", 0, 1, "lin", 0, "", "set_in_grains_send")
   -- delay_sync (default "1", one beat) follows the norns clock; delay_time is the free setting,
   -- shown only while free. justdraw.lua re-sends the synced time when the tempo changes.
   p:add_option("delay_sync", "delay sync", SYNC_OPTIONS, 13)
