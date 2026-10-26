@@ -13,6 +13,7 @@
 ---E3: release
 ---K2: octave down
 ---K3: octave up
+---K1 hold: shift
 ---
 ---outputs and other
 ---settings: PARAMS
@@ -32,6 +33,7 @@ local Ii = include 'lib/jd_ii_out'
 local FPS = 30
 local OVERLAY = 1                 -- seconds an encoder's name and value stay on screen
 local ENCODERS = { "noise", "ratio", "release" }
+local OUTPUT_NAMES = { "engine", "midi", "crow", "jf", "wsyn" }   -- the E M C J W row, left to right
 
 local player, tablet, midi_out, crow_out, jf_out, wsyn_out
 local redraw_metro, sched_metro
@@ -39,6 +41,8 @@ local active_port                  -- the hid port being read, or nil
 local status                       -- shown on screen when something is wrong
 local overlay                      -- { text, until }
 local dirty = true
+local shift = false                -- K1 is held
+local cursor = 1                   -- the output the shift layer's K3 switches
 local prior_crow_add
 local prior_tempo_handler
 local last_tempo
@@ -109,6 +113,26 @@ local function resync_delay()
   end
 end
 
+-- Sends the settings of each named output that is on, by switching it off and on again.
+-- Returns how many it sent to.
+local function resend(names)
+  local n = 0
+  for _, name in ipairs(names) do
+    if player.on[name] then
+      local out = player.outputs[name]
+      out.disable()
+      out.enable()
+      n = n + 1
+    end
+  end
+  return n
+end
+
+local function say(text)
+  overlay = { text = text, ["until"] = now() + OVERLAY }
+  dirty = true
+end
+
 function init()
   local function ports()
     local names = {}
@@ -165,13 +189,7 @@ function init()
   norns.crow.add = function(...)
     if prior_crow_add then prior_crow_add(...) end
     crow.ii.pullup(true)
-    for _, name in ipairs({ "crow", "jf", "wsyn" }) do
-      if player.on[name] then
-        local out = player.outputs[name]
-        out.disable()
-        out.enable()
-      end
-    end
+    resend({ "crow", "jf", "wsyn" })
   end
 
   Params.add(params, {
@@ -214,16 +232,42 @@ function init()
   last_tempo = clock.get_tempo()
 end
 
+-- K1 held: E2 and E3 reach the delay.
+local SHIFT_ENCODERS = { [2] = "delay_sync", [3] = "delay_decay" }
+
 function enc(n, d)
+  if shift then
+    if n == 1 then
+      cursor = math.max(1, math.min(#OUTPUT_NAMES, cursor + d))
+      dirty = true
+      return
+    end
+    local id = SHIFT_ENCODERS[n]
+    if not id then return end
+    params:delta(id, d)
+    say(id:gsub("_", " ") .. " " .. params:string(id))
+    return
+  end
   local id = ENCODERS[n]
   if not id then return end
   params:delta(id, d)
-  overlay = { text = id .. " " .. params:string(id), ["until"] = now() + OVERLAY }
-  dirty = true
+  say(id .. " " .. params:string(id))
 end
 
 function key(n, z)
+  if n == 1 then shift = (z == 1); dirty = true; return end
   if z ~= 1 then return end
+  if shift then
+    if n == 3 then
+      local id = "out_" .. OUTPUT_NAMES[cursor]
+      params:set(id, 1 - params:get(id))
+      say(OUTPUT_NAMES[cursor] .. " " .. (params:get(id) == 1 and "on" or "off"))
+    elseif n == 2 then
+      say(resend({ "jf", "wsyn" }) > 0 and "JF and w/syn settings sent" or "no ii outputs on")
+    end
+    dirty = true
+    return
+  end
   if n == 2 then player:shift_octave(-1)
   elseif n == 3 then player:shift_octave(1) end
   dirty = true
@@ -238,6 +282,7 @@ function redraw()
   Screen.draw(screen, player, {
     note_text = note_text,
     outputs = outputs,
+    cursor = shift and cursor or nil,
     overlay = overlay,
     status = status,
     flip = params:get("flip") == 1,

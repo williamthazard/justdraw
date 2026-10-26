@@ -105,6 +105,11 @@ function Screen.draw(s, player, ui, now)
     s.level(ui.outputs[o[1]] and 15 or 2)
     s.move(COL + (i - 1) * 5, 41)
     s.text(o[2])
+    if ui.cursor == i then       -- the shift layer's cursor: a 1 px underline
+      s.level(15)
+      s.rect(COL + (i - 1) * 5, 43, 4, 1)
+      s.fill()
+    end
   end
   if ui.flip then
     s.level(4)

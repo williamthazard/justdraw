@@ -34,6 +34,18 @@ the first install needs a norns restart, so the new engine registers.
 
 the encoders work on a note that is sounding, and whether or not the engine is switched on.
 
+hold K1 for a shift layer (a quick tap still opens the norns menu; the layer starts after a
+quarter second):
+
+- E1: move a cursor along the E M C J W row. a small line under the letter shows where it is, and
+  the cursor stays put when K1 is let go.
+- K3: switch the output under the cursor on or off.
+- K2: send the ii settings again (JF's mode and w/syn's settings) to the outputs that are on.
+- E2: delay sync
+- E3: delay decay
+
+the screen's bottom strip shows each change. without K1, everything works as above.
+
 ## outputs
 
 each output is switched on or off in params. engine is on at first; the rest are off.
