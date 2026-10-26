@@ -7,9 +7,11 @@
 // x walks a path through them: 0 sine, 0.2 exp curves, 0.4 linear near-saw, 0.7 log, 1 near-square + deep FM.
 // No folding or saturation: the noise comes from modulation, not clipping.
 SynthDef(\jd_voice, { |out = 0, note = 48, intensity = 0, pressure = 0, gate = 1, release = 0.5, ratio = 0.7, noise = 0.5|
-	var p = Lag.kr(pressure, 0.02);
+	// vactrol-style pressure: rises in about 20 ms, falls in about 250 ms, so lifting off fades out
+	// instead of cutting off; it drives the loudness and the low-pass below
+	var p = LagUD.kr(pressure, 0.02, 0.25);
 	// pressing hard pushes the morph a little further right
-	var x = (Lag.kr(intensity, 0.03) + (p * 0.08)).clip(0, 1);
+	var x = (Lag.kr(intensity, 0.05) + (p * 0.08)).clip(0, 1);
 	var freq = Lag.kr(note, 0.015).midicps;
 	var ramp = IEnvGen.kr(Env([0.5, 0.5, 0.15, 0.04, 0.01], [0.1, 0.3, 0.3, 0.3]), x);
 	var curve = IEnvGen.kr(Env([1, 0.5, 0, -0.5, -0.85], [0.2, 0.2, 0.3, 0.3]), x);
@@ -32,8 +34,9 @@ SynthDef(\jd_voice, { |out = 0, note = 48, intensity = 0, pressure = 0, gate = 1
 	var down = 1 - bend.(((phase - ramp) / (1 - ramp)).clip(0, 1));
 	var env = EnvGen.kr(Env.asr(0.005, 1, release, -3), gate, doneAction: 2);
 	var sig = (((rising * up) + ((1 - rising) * down)) * 2) - 1;
+	// the low-pass opens with the pressure, 300 Hz to 14 kHz exponentially, so softer touches are darker;
 	// full pressure on the left peaks near -12 dBFS, like tabletseq's own voices; softclip is only a
 	// safety for the spikes at the right edge (it leaves anything below -6 dBFS untouched)
-	sig = LeakDC.ar(LPF.ar(sig, 14000)) * gain * (p ** 1.5) * env * 0.25;
+	sig = LeakDC.ar(LPF.ar(sig, p.linexp(0, 1, 300, 14000))) * gain * (p ** 1.5) * env * 0.25;
 	Out.ar(out, (sig ! 2).softclip);
 });
