@@ -146,7 +146,7 @@ function init()
   end
 
   local jf_settings = { mode = 1 }
-  local wsyn_settings = { voices = 4, lpg_time = 0, lpg_symmetry = 0, hold = true }
+  local wsyn_settings = { voices = 4, lpg_time = 0, lpg_symmetry = 0, fm_env = 0, hold = true }
 
   midi_out = MidiOut.new(NO_DEVICE)
   crow_out = CrowOut.new{ crow = crow, connected = crow_here }

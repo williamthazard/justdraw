@@ -121,6 +121,9 @@ function Params.add(p, deps)
   p:add_control("wsyn_lpg_symmetry", "w/syn LPG symmetry", controlspec.new(-5, 5, "lin", 0, 0, "V"))
   p:set_action("wsyn_lpg_symmetry", ii_setting("out_wsyn", wsyn_out,
     function(s, v) s.lpg_symmetry = v end))
+  p:add_control("wsyn_fm_env", "w/syn FM envelope", controlspec.new(-5, 5, "lin", 0, 0, "V"))
+  p:set_action("wsyn_fm_env", ii_setting("out_wsyn", wsyn_out,
+    function(s, v) s.fm_env = v end))
   p:add_option("wsyn_hold", "w/syn envelope", { "hold", "pluck" }, 1)
   p:set_action("wsyn_hold", ii_setting("out_wsyn", wsyn_out,
     function(s, i) s.hold = (i == 1) end))

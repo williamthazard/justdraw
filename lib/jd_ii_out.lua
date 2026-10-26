@@ -110,6 +110,7 @@ function WsynOut.new(opts)
     wsyn.voices(settings.voices)
     wsyn.lpg_time(settings.lpg_time)
     wsyn.lpg_symmetry(settings.lpg_symmetry)
+    wsyn.fm_env(settings.fm_env)
     wsyn.ar_mode(settings.hold and 0 or 1)
   end
 

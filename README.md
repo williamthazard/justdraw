@@ -76,7 +76,7 @@ all in params, so a pset saves and loads every one of them.
 - tablet: auto, or a hid port 1 to 4
 - outputs: engine, midi, crow, just friends, w/syn
 - midi: device, channel, bend range, x cc, send cc
-- just friends mode (normal or synthesis); w/syn voices, lpg time, lpg symmetry, hold or pluck
+- just friends mode (normal or synthesis); w/syn voices, lpg time, lpg symmetry, fm envelope (0 is off), hold or pluck
 - effects (engine only), all off by default:
   - reverb: "reverb send" sets how much of the voice goes in; room, damp and level shape it.
   - delay: "delay send" sets how much goes in; decay, level, "delay to reverb" and "delay to dry"
