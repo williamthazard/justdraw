@@ -34,9 +34,10 @@ SynthDef(\jd_voice, { |out = 0, note = 48, intensity = 0, pressure = 0, gate = 1
 	var down = 1 - bend.(((phase - ramp) / (1 - ramp)).clip(0, 1));
 	var env = EnvGen.kr(Env.asr(0.005, 1, release, -3), gate, doneAction: 2);
 	var sig = (((rising * up) + ((1 - rising) * down)) * 2) - 1;
-	// the low-pass opens with the pressure, 300 Hz to 14 kHz exponentially, so softer touches are darker;
+	// the low-pass opens with the pressure, 300 Hz to 14 kHz exponentially, so softer touches are darker,
+	// but never below twice the note's frequency: a soft high note loses harmonics, not its fundamental;
 	// full pressure on the left peaks near -12 dBFS, like tabletseq's own voices; softclip is only a
 	// safety for the spikes at the right edge (it leaves anything below -6 dBFS untouched)
-	sig = LeakDC.ar(LPF.ar(sig, p.linexp(0, 1, 300, 14000))) * gain * (p ** 1.5) * env * 0.25;
+	sig = LeakDC.ar(LPF.ar(sig, p.linexp(0, 1, 300, 14000).max(freq * 2).min(14000))) * gain * (p ** 1.5) * env * 0.25;
 	Out.ar(out, (sig ! 2).softclip);
 });
