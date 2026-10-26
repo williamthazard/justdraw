@@ -157,7 +157,7 @@ function Params.add(p, deps)
   -- Carter's delay: schicksalslied 2's granular chain, ported. It stays unallocated until grains_on
   -- is switched on. Each action sends its value to the engine, which stores it until the chain
   -- is allocated; params:bang() then brings the engine in line.
-  p:add_group("carters_delay", "carter's delay", 37)
+  p:add_group("carters_delay", "carter's delay", 38)
   p:add_binary("grains_on", "carter's delay", "toggle", 0)
   p:set_action("grains_on", function(v) engine.grains_on(v) end)
   local function grain(id, name, min, max, warp, step, default, units, command)
@@ -171,6 +171,7 @@ function Params.add(p, deps)
   local OFF_ON = { "off", "on" }
   grain("grains_send", "send to delay", 0, 1, "lin", 0.01, 0, "", "set_grains_send")
   grain("grains_level", "delay level", 0, 1, "lin", 0.01, 0.3, "", "set_grains_level")
+  grain("grains_to_reverb", "carter's to reverb", 0, 1, "lin", 0.01, 0, "", "set_grains_to_reverb")
 
   p:add_separator("jd_grain_engine", "granular engine")
   grain_option("granular_freeze", "granular freeze", OFF_ON, "set_grains_freeze")

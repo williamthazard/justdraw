@@ -4,6 +4,8 @@
 // the chain on. There is no mic: the recorder reads only the mono bus \jd_sends writes (grains_send)
 // plus the feedback patch. Each grain's pan, cutoff and resonance LFOs run inside the grain synth
 // (Lied used one Ndef per LFO), so the rates are plain synth controls and the chain is SynthDefs only.
+// Each grain also writes a share of its signal (toReverb) to the reverb's input bus, so the
+// reverb has to run after the grains.
 [
 	// Pointer (write head): advances through the delay buffer.
 	SynthDef(\jd_ptr, { |out = 0, buf = 0, rate = 1|
@@ -29,8 +31,10 @@
 		sig = HPF.ar(sig, hpFreq.max(5));
 		Out.ar(out, Mix(sig).softclip * amp.lag3(amp_slew));
 	}),
-	// Grain synth: reads the delay buffer at randomized rates and positions.
-	SynthDef(\jd_gran, { |amp = 0, amp_slew = 0.05, buf = 0, out = 0, atk = 1, rel = 1, gate = 1,
+	// Grain synth: reads the delay buffer at randomized rates and positions. The dry signal goes
+	// to `out` unchanged; a copy scaled by toReverb goes to the reverb's input bus (reverbOut).
+	SynthDef(\jd_gran, { |amp = 0, amp_slew = 0.05, buf = 0, out = 0, reverbOut = 0, toReverb = 0,
+		atk = 1, rel = 1, gate = 1,
 		sync = 1, dens = 40, baseDur = 0.05, durRand = 1, rate = 1, rateRand = 1,
 		grainEnv = (-1), ptrBus = 0, ptrSampleDelay = 20000, ptrRandSamples = 5000,
 		minPtrDelay = 1000, cutoffMax = 16000, beatSec = 0.5,
@@ -49,6 +53,8 @@
 		res = LFTri.kr(1 / (resRate * beatSec)).range(0, 2);
 		sig = GrainBuf.ar(1, trig, dur, buf, rt, ptr, 4, 0, grainEnv);
 		sig = MoogFF.ar(sig * env * amp.lag3(amp_slew), min(cutoff, cutoffMax).clip(50, 18000), res.clip(0, 4));
-		Out.ar(out, Pan2.ar(sig, pan));
+		sig = Pan2.ar(sig, pan);
+		Out.ar(out, sig);
+		Out.ar(reverbOut, sig * toReverb.lag(0.05));
 	})
 ]

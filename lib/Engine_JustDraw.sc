@@ -1,7 +1,7 @@
 // just draw's engine: one morphing voice, played from the tablet.
 // The only SuperCollider class in the script; the SynthDefs live in jd_voice.scd and jd_fx.scd.
 Engine_JustDraw : CroneEngine {
-	var voiceBus, reverbBus, delayBus, voiceGroup, fxGroup, outGroup, outSynth, sends, delay, reverb, voice;
+	var voiceBus, reverbBus, delayBus, voiceGroup, fxGroup, reverbGroup, outGroup, outSynth, sends, delay, reverb, voice;
 	var noise = 0.5, ratio = 0.7, release = 0.5;
 	// Carter's delay (jd_grains.scd): nothing is allocated until grains_on 1. grainSet holds every
 	// setting, so values sent while the chain is off (or still allocating) apply when it comes up.
@@ -30,19 +30,23 @@ Engine_JustDraw : CroneEngine {
 		grainsBus = Bus.audio(context.server, 1);
 		this.initGrains;
 		fxGroup = Group.after(voiceGroup);
-		// Each new synth goes to the head of fxGroup, so adding reverb, delay, then sends
-		// runs them sends, delay, reverb: the delay's writes reach the reverb bus before it is read.
-		reverb = Synth.new(\jd_reverb, [\in, reverbBus, \out, context.out_b], fxGroup);
+		// Node order: a bus written by a node that runs after its reader is lost for that cycle.
+		// The reverb reads reverbBus, which \jd_delay and Carter's delay both write, so it gets a
+		// group of its own after fxGroup: voices, fxGroup (sends, delay), Carter's delay (its three
+		// groups come right after fxGroup), reverbGroup, then the output stage. Each new synth goes
+		// to the head of fxGroup, so adding delay, then sends runs them sends, delay.
+		reverbGroup = Group.after(fxGroup);
+		reverb = Synth.new(\jd_reverb, [\in, reverbBus, \out, context.out_b], reverbGroup);
 		delay = Synth.new(\jd_delay, [\in, delayBus, \out, context.out_b, \reverbOut, reverbBus], fxGroup);
 		sends = Synth.new(\jd_sends, [
 			\in, voiceBus, \out, context.out_b, \reverbOut, reverbBus, \delayOut, delayBus,
 			\grainsOut, grainsBus
 		], fxGroup);
 
-		// The tail of everything: outGroup comes right after fxGroup, and every group made later
-		// (Carter's delay allocates its three with Group.after(fxGroup)) lands between them, so
+		// The tail of everything: outGroup comes right after reverbGroup, and every group made later
+		// (Carter's delay allocates its three with Group.after(fxGroup)) lands before reverbGroup, so
 		// \jd_out always runs last. -10 dB (0.316) until the script's param sends its value.
-		outGroup = Group.after(fxGroup);
+		outGroup = Group.after(reverbGroup);
 		outSynth = Synth.new(\jd_out, [\out, context.out_b, \level, 10 ** (-10 / 20)], outGroup);
 
 		this.addCommand(\set_out_level, "f", { arg msg; outSynth.set(\level, msg[1]) });
@@ -89,7 +93,8 @@ Engine_JustDraw : CroneEngine {
 			if(msg[1] > 0) { this.allocGrains } { this.freeGrains };
 		});
 		[
-			[\set_grains_level, \level], [\set_grains_freeze, \freeze], [\set_grains_rec_pre, \recPre],
+			[\set_grains_level, \level], [\set_grains_to_reverb, \toReverb],
+			[\set_grains_freeze, \freeze], [\set_grains_rec_pre, \recPre],
 			[\set_grains_window, \window], [\set_grains_sync, \sync],
 			[\set_grains_cutoff_ceiling, \ceiling], [\set_grains_rate_mult, \rateMult],
 			[\set_grains_octaves, \octaves], [\set_grains_fifths, \fifths],
@@ -111,8 +116,8 @@ Engine_JustDraw : CroneEngine {
 
 	initGrains {
 		grainSet = Dictionary.newFrom([
-			\level, 0.3, \freeze, 0, \recPre, 0, \window, 0, \sync, 1, \ceiling, 16000, \rateMult, 1,
-			\octaves, 0, \fifths, 0, \suboctaves, 0, \reverse, 0, \delayScale, 1,
+			\level, 0.3, \toReverb, 0, \freeze, 0, \recPre, 0, \window, 0, \sync, 1, \ceiling, 16000,
+			\rateMult, 1, \octaves, 0, \fifths, 0, \suboctaves, 0, \reverse, 0, \delayScale, 1,
 			\fbAmp, 0, \fbBalance, 0, \fbHpf, 12, \fbNoise, 0, \fbSineLevel, 0, \fbSineHz, 55
 		]);
 		grainRates = (panRate: Array.fill(grainCount, { rrand(1, 64) }),
@@ -146,6 +151,7 @@ Engine_JustDraw : CroneEngine {
 		var value = grainSet[key];
 		case
 			{ key == \level } { grainSynths.do { |g| g.set(\amp, value) } }
+			{ key == \toReverb } { grainSynths.do { |g| g.set(\toReverb, value) } }
 			{ key == \sync } { grainSynths.do { |g| g.set(\sync, value) } }
 			{ key == \ceiling } { grainSynths.do { |g| g.set(\cutoffMax, value) } }
 			{ key == \window } { grainSynths.do { |g| g.set(\grainEnv, this.grainEnvNum) } }
@@ -201,7 +207,8 @@ Engine_JustDraw : CroneEngine {
 			if(gen != grainsGen) {
 				grainBuf.free; grainEnvBufs.do(_.free); grainPtrBus.free;
 			} {
-				// ptr, rec and grains run after fxGroup, so \jd_sends has written grainsBus first.
+				// ptr, rec and grains run after fxGroup, so \jd_sends has written grainsBus first, and
+				// before reverbGroup, so the grains' writes reach the reverb bus before it is read.
 				grainGroups = Array.newClear(3);
 				grainGroups[0] = Group.after(fxGroup);
 				grainGroups[1] = Group.after(grainGroups[0]);
@@ -221,7 +228,8 @@ Engine_JustDraw : CroneEngine {
 				}).scramble;
 				grainSynths = grainCount.collect { |n|
 					Synth(\jd_gran, [
-						\amp, grainSet[\level], \buf, grainBuf, \out, context.out_b, \atk, 1, \rel, 1, \gate, 1,
+						\amp, grainSet[\level], \buf, grainBuf, \out, context.out_b,
+						\reverbOut, reverbBus, \toReverb, grainSet[\toReverb], \atk, 1, \rel, 1, \gate, 1,
 						\sync, grainSet[\sync], \dens, 1 / (grainDurs[n] * rates[n].abs),
 						\baseDur, grainDurs[n], \durRand, 1, \rate, rates[n], \rateRand, 1,
 						\grainEnv, this.grainEnvNum, \ptrBus, grainPtrBus, \ptrSampleDelay, grainDelays[n],
@@ -263,6 +271,7 @@ Engine_JustDraw : CroneEngine {
 		reverb.free;
 		outSynth.free;
 		outGroup.free;
+		reverbGroup.free;
 		fxGroup.free;
 		voiceGroup.free;
 		voiceBus.free;

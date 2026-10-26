@@ -1,5 +1,6 @@
 // just draw's effects. Evaluates to an Array of unadded SynthDefs, ported from schicksalslied 2's
-// \liedDelay and \liedReverb. Node order is voices, \jd_sends, \jd_delay, \jd_reverb, then (in a
+// \liedDelay and \liedReverb. Node order is voices, \jd_sends, \jd_delay, Carter's delay (when it is
+// on, writing the reverb bus too), \jd_reverb (in its own group, after the grains), then (in a
 // group at the very tail of the engine) \jd_out.
 // \jd_sends reads the stereo voice bus: the dry signal goes to `out` unchanged, and scaled copies
 // go to the reverb and delay buses and, as a mono sum, to Carter's delay (grainsOut). The delay feeds `out` and the reverb bus; the reverb feeds `out`.

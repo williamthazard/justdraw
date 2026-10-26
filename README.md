@@ -84,7 +84,8 @@ all in params, so a pset saves and loads every one of them.
     follows its tempo, whether that is set in params, by link, by midi or by crow. pick a division
     from 1/16 to 8 beats, capped at 8 seconds. choose "free" to set delay time yourself, in seconds.
   - carter's delay: a granular delay (from schicksalslied 2) that stays unallocated until the
-    "carter's delay" switch is on. "send to delay" feeds it and "delay level" sets its volume. the
+    "carter's delay" switch is on. "send to delay" feeds it and "delay level" sets its volume.
+    "carter's to reverb" sends a share of it into the reverb as well. the
     granular switches are freeze, octaves, fifths & 4ths, sub-octaves and reverse. a feedback
     patch (amp, balance, hpf, and noise and sine injection) writes back into the delay. grain
     delay scale takes effect the next time the switch goes off and on.
