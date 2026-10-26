@@ -46,8 +46,8 @@ function Params.add(p, deps)
   knob("release", "release", 0.05, 3, "exp", 0.5, "s")
 
   -- The engine's output level, in dB, ahead of its -1 dBFS safety limiter.
-  p:add_control("engine_level", "engine level", controlspec.new(-60, 6, "lin", 0, -10, "dB"))
-  p:set_action("engine_level", function(db) engine.set_out_level(10 ^ (db / 20)) end)
+  p:add_control("jd_engine_level", "engine level", controlspec.new(-60, 6, "lin", 0, -10, "dB"))
+  p:set_action("jd_engine_level", function(db) engine.set_out_level(10 ^ (db / 20)) end)
 
   p:add_option("root", "root", ROOTS, 1)
   p:set_action("root", function(i) player:set("root", i - 1) end)
