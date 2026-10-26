@@ -21,10 +21,12 @@
 		BufWr.ar(sig, buf, ptr);
 	}),
 	// Feedback patch: the main output, balanced, softclipped and high-passed (plus optional noise
-	// and sine), summed to one channel and written back to the recorder's bus.
-	SynthDef(\jd_fbmix, { |in = 0, out = 0, amp = 0, amp_slew = 0.05, balance = 0,
+	// and sine), summed to one channel and written back to the recorder's bus. The reverb runs
+	// after this node, so what it has written to `in` by now is only the dry signal and the delay;
+	// the reverb's own output comes from reverbIn (its fbOut bus), one block late.
+	SynthDef(\jd_fbmix, { |in = 0, reverbIn = 0, out = 0, amp = 0, amp_slew = 0.05, balance = 0,
 		hpFreq = 12, noiseLevel = 0, sineLevel = 0, sineHz = 55|
-		var input = InFeedback.ar(in, 2);
+		var input = InFeedback.ar(in, 2) + InFeedback.ar(reverbIn, 2);
 		var sig = Balance2.ar(input[0], input[1], balance);
 		sig = sig + (PinkNoise.ar * noiseLevel);
 		sig = sig + (SinOsc.ar(sineHz) * sineLevel);

@@ -1,7 +1,7 @@
 // just draw's engine: one morphing voice, played from the tablet.
 // The only SuperCollider class in the script; the SynthDefs live in jd_voice.scd and jd_fx.scd.
 Engine_JustDraw : CroneEngine {
-	var voiceBus, reverbBus, delayBus, voiceGroup, fxGroup, reverbGroup, outGroup, outSynth, sends, delay, reverb, voice;
+	var voiceBus, reverbBus, reverbRetBus, delayBus, voiceGroup, fxGroup, reverbGroup, outGroup, outSynth, sends, delay, reverb, voice;
 	var noise = 0.5, ratio = 0.7, release = 0.5;
 	// Carter's delay (jd_grains.scd): nothing is allocated until grains_on 1. grainSet holds every
 	// setting, so values sent while the chain is off (or still allocating) apply when it comes up.
@@ -26,6 +26,7 @@ Engine_JustDraw : CroneEngine {
 		voiceBus = Bus.audio(context.server, 2);
 		voiceGroup = Group.new(context.xg);
 		reverbBus = Bus.audio(context.server, 2);
+		reverbRetBus = Bus.audio(context.server, 2);
 		delayBus = Bus.audio(context.server, 2);
 		grainsBus = Bus.audio(context.server, 1);
 		this.initGrains;
@@ -35,8 +36,10 @@ Engine_JustDraw : CroneEngine {
 		// group of its own after fxGroup: voices, fxGroup (sends, delay), Carter's delay (its three
 		// groups come right after fxGroup), reverbGroup, then the output stage. Each new synth goes
 		// to the head of fxGroup, so adding delay, then sends runs them sends, delay.
+		// The feedback patch (\jd_fbmix) runs before the reverb, so it hears the reverb through
+		// reverbRetBus, a copy of its output that it reads one block late.
 		reverbGroup = Group.after(fxGroup);
-		reverb = Synth.new(\jd_reverb, [\in, reverbBus, \out, context.out_b], reverbGroup);
+		reverb = Synth.new(\jd_reverb, [\in, reverbBus, \out, context.out_b, \fbOut, reverbRetBus], reverbGroup);
 		delay = Synth.new(\jd_delay, [\in, delayBus, \out, context.out_b, \reverbOut, reverbBus], fxGroup);
 		sends = Synth.new(\jd_sends, [
 			\in, voiceBus, \out, context.out_b, \reverbOut, reverbBus, \delayOut, delayBus,
@@ -215,7 +218,7 @@ Engine_JustDraw : CroneEngine {
 				grainGroups[2] = Group.after(grainGroups[1]);
 				grainPtr = Synth(\jd_ptr, [\buf, grainBuf, \out, grainPtrBus,
 					\rate, if(grainSet[\freeze] > 0) { 0 } { 1 }], grainGroups[0]);
-				grainFb = Synth(\jd_fbmix, [\in, context.out_b, \out, grainsBus, \amp, grainSet[\fbAmp],
+				grainFb = Synth(\jd_fbmix, [\in, context.out_b, \reverbIn, reverbRetBus, \out, grainsBus, \amp, grainSet[\fbAmp],
 					\balance, grainSet[\fbBalance], \hpFreq, grainSet[\fbHpf], \noiseLevel, grainSet[\fbNoise],
 					\sineLevel, grainSet[\fbSineLevel], \sineHz, grainSet[\fbSineHz]], grainGroups[0]);
 				grainRec = Synth(\jd_rec, [\ptrIn, grainPtrBus, \micIn, grainsBus, \buf, grainBuf,
@@ -276,6 +279,7 @@ Engine_JustDraw : CroneEngine {
 		voiceGroup.free;
 		voiceBus.free;
 		reverbBus.free;
+		reverbRetBus.free;
 		delayBus.free;
 		grainsBus.free;
 	}
