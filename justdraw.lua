@@ -113,15 +113,20 @@ local function resync_delay()
   end
 end
 
--- Sends the settings of each named output that is on, by switching it off and on again.
--- Returns how many it sent to.
-local function resend(names)
+-- Sends the settings of each named output that is on. `restart` switches it off and on again,
+-- which also re-sends a blank module's wave shape but releases a sounding note; without it the
+-- settings are applied in place. Returns how many it sent to.
+local function resend(names, restart)
   local n = 0
   for _, name in ipairs(names) do
     if player.on[name] then
       local out = player.outputs[name]
-      out.disable()
-      out.enable()
+      if restart then
+        out.disable()
+        out.enable()
+      elseif out.apply_settings then
+        out.apply_settings()
+      end
       n = n + 1
     end
   end
@@ -189,7 +194,7 @@ function init()
   norns.crow.add = function(...)
     if prior_crow_add then prior_crow_add(...) end
     crow.ii.pullup(true)
-    resend({ "crow", "jf", "wsyn" })
+    resend({ "crow", "jf", "wsyn" }, true)
   end
 
   Params.add(params, {
@@ -263,7 +268,8 @@ function key(n, z)
       params:set(id, 1 - params:get(id))
       say(OUTPUT_NAMES[cursor] .. " " .. (params:get(id) == 1 and "on" or "off"))
     elseif n == 2 then
-      say(resend({ "jf", "wsyn" }) > 0 and "JF and w/syn settings sent" or "no ii outputs on")
+      if not crow_here() then say("crow not connected")
+      else say(resend({ "jf", "wsyn" }) > 0 and "JF and w/syn settings sent" or "no ii outputs on") end
     end
     dirty = true
     return
